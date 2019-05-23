@@ -112,44 +112,48 @@ Watcher.prototype = {
 
 // 3.实现一个解析器Compile，可以扫描和解析每个节点的相关指令，并根据初始化模板数据以及初始化相应的订阅器。
 
-/**
- * 将需要解析的dom节点存入fragment片段里再进行处理
- *
- * @param {*} el 需要处理的dom
- */
-function nodeToFragment(el){
-  let fragment = document.createDocumentFragment;
-  let child = el.firstChild;
-  while(child){
-    // 将Dom元素移入fragment中
-    fragment.appendChild(child);
-    child = el.firstChild;
-  }
-  return fragment;
-}
-/**
- * 遍历各个节点，对含有相关指定的节点进行特殊处理
- *
- * @param {*} el 遍历的dom
- */
-function compileElement(el){
-  let childNodes = el.childNodes;
-  let self = this;
-  [].slice.call(childNodes).forEach(node=>{
-    let reg = /\{\{(.*)\}\}/;
-    let text = node.textContent;
-    // 判断是否是符合这种形式{{}}的指令
-    if(self.isTextNode(node) && reg.test(text)){
-      self.compileText(node, reg.exec(text)[1]);
-    }
-    if (node.childNodes && node.childNodes.length) {
-      // 继续递归遍历子节点
-      self.compileElement(node);
-    }
-  })
+function Compile(el,vm){
+  this.el = document.querySelector(el);
+  this.vm = vm;
+  this.fragment = null;
+  this.init();
 }
 
-function compileText(node,exp){}
+Compile.prototype = {
+  init:function(){
+    if(this.el){
+      this.fragment = this.nodeToFragment(this.el);
+      this.compileElement(this.fragment);
+      this.el.appendChild(this.fragment);
+    }
+  },
+  nodeToFragment:function(el){
+    let fragment = document.createDocumentFragment();
+    let child = el.firstChild;
+    while(child){
+      fragment.appendChild(child);
+      child = el.firstChild;
+    }
+    return fragment;
+  },
+  compileElement:function(el){
+    let childNodes = el.childNodes;
+    let self = this;
+    [].slice.call(childNodes).forEach(node=>{
+      let reg = /\{\{\s*(.*?)\s*\}\}/;
+      let text = node.textContent;
+      if (self.isTextNode(node) && reg.test(text)) {
+        self.compileText(node, reg.exec(text)[1]);
+      }
+      if (node.childNodes && node.childNodes.length) {
+        self.compileElement(node);  // 继续递归遍历子节点
+      }
+    })
+  }
+}
+
+
+
 
 /**
  * SelfVue
